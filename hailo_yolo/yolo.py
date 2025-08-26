@@ -62,7 +62,7 @@ class YoloInferenceNode(Node):
             return
                 
         # Hailo inference via Degirum PySDK-------------------------------------------------------
-        self.hef_path = '/root/myPython_test/model_zoo'
+        self.hef_path = '/root/hailo_model/model_zoo'
         self.model_name = 'yolov8n_seg'
         self.get_logger().info(f"Yolo inference model is loading... Used HEF: {self.model_name} into {self.hef_path}")
         try:  
