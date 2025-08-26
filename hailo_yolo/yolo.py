@@ -72,7 +72,7 @@ class YoloInferenceNode(Node):
                 zoo_url = self.hef_path
             )
         except Exception as e:
-            self.get_logger.error(f"Failed to load model: {e}")
+            self.get_logger().error(f"Failed to load model: {e}")
             rclpy.shutdown()
             return
 
