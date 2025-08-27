@@ -3,7 +3,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.executors import MultiThreadedExecutor
-from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
+# from vision_msgs.msg import Detection2DArray, Detection2D, ObjectHypothesisWithPose
 from sensor_msgs.msg import Image
 import cv2
 import numpy as np
@@ -116,60 +116,64 @@ class YoloInferenceNode(Node):
 
     
     def postprocess_yolo_results(self, raw_results, image, mode):
-        if mode == 'object_detection': # Obsolete
-            det_msg = self.object_detection(raw_results,image)
-        elif mode == 'segment':
+        # if mode == 'object_detection': # Obsolete
+        #     det_msg = self.object_detection(raw_results,image)
+        # elif mode == 'segment':
+        #     det_msg = self.instance_segmentation(raw_results,image)
+        # else:
+        #     raise NameError(f'No mode such a {mode}.')
+        if mode == 'segment':
             det_msg = self.instance_segmentation(raw_results,image)
         else:
             raise NameError(f'No mode such a {mode}.')
         
         return det_msg
     
-    def object_detection(self, results, image):
-        """
-        現状はPublishの整合性が取れていないため使用不可
-        Convert to ros message from hailo-formated inference result.
-        raw_results: type:nd.ndarray, row:CLASS_LABEL, col:[BBOX:param(ymin,xmin,ymax,xmax),score], 
-        height:Detection num, shape:80*5*100 (based on hailo output_tensor)
-        """
-        detection_array_msg = Detection2DArray()
-        if len(results.results) == 0:
-            return detection_array_msg
+    # def object_detection(self, results, image):
+    #     """
+    #     現状はPublishの整合性が取れていないため使用不可
+    #     Convert to ros message from hailo-formated inference result.
+    #     raw_results: type:nd.ndarray, row:CLASS_LABEL, col:[BBOX:param(ymin,xmin,ymax,xmax),score], 
+    #     height:Detection num, shape:80*5*100 (based on hailo output_tensor)
+    #     """
+    #     detection_array_msg = Detection2DArray()
+    #     if len(results.results) == 0:
+    #         return detection_array_msg
         
 
-        for idx in results.results:
-            class_id = idx['category_id']
-            bbox = idx['bbox']
-            mask = idx['mask']
-            score = idx['score']
-            # label = idx['label']
-            x_min, y_min, x_max, y_max = bbox
+    #     for idx in results.results:
+    #         class_id = idx['category_id']
+    #         bbox = idx['bbox']
+    #         mask = idx['mask']
+    #         score = idx['score']
+    #         # label = idx['label']
+    #         x_min, y_min, x_max, y_max = bbox
 
-            center_x = float((x_min + x_max) / 2)
-            center_y = float((y_min + y_max) / 2)
-            width = float(x_max - x_min)
-            height = float(y_max - y_min)
+    #         center_x = float((x_min + x_max) / 2)
+    #         center_y = float((y_min + y_max) / 2)
+    #         width = float(x_max - x_min)
+    #         height = float(y_max - y_min)
             
 
-            detection_msg = Detection2D()
+    #         detection_msg = Detection2D()
 
-            # Bounding box
-            detection_msg.bbox.center.position.x = float(center_x)
-            detection_msg.bbox.center.position.y = float(center_y)
-            detection_msg.bbox.center.theta = 0.0
-            detection_msg.bbox.size_x = float(width)
-            detection_msg.bbox.size_y = float(height)
+    #         # Bounding box
+    #         detection_msg.bbox.center.position.x = float(center_x)
+    #         detection_msg.bbox.center.position.y = float(center_y)
+    #         detection_msg.bbox.center.theta = 0.0
+    #         detection_msg.bbox.size_x = float(width)
+    #         detection_msg.bbox.size_y = float(height)
 
-            # CLASS ID, Score
-            hypothesis = ObjectHypothesisWithPose()
-            hypothesis.hypothesis.class_id = str(CLASS_LABELS[class_id])
-            hypothesis.hypothesis.score = float(score)
-            # hypothesis.pose.pose = 0
-            # hypothesis.pose.covariance = [0.0] * 36
-            detection_msg.results.append(hypothesis)
-            detection_array_msg.detections.append(detection_msg)
+    #         # CLASS ID, Score
+    #         hypothesis = ObjectHypothesisWithPose()
+    #         hypothesis.hypothesis.class_id = str(CLASS_LABELS[class_id])
+    #         hypothesis.hypothesis.score = float(score)
+    #         # hypothesis.pose.pose = 0
+    #         # hypothesis.pose.covariance = [0.0] * 36
+    #         detection_msg.results.append(hypothesis)
+    #         detection_array_msg.detections.append(detection_msg)
 
-        return detection_array_msg
+    #     return detection_array_msg
     
     def instance_segmentation(self, results, image):
         """
