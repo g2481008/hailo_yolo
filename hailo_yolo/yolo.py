@@ -125,7 +125,7 @@ class YoloInferenceNode(Node):
         if mode == 'segment':
             det_msg = self.instance_segmentation(raw_results,image)
         else:
-            raise NameError(f'No mode such a {mode}.')
+            raise NameError(f'Falied to load postprocess {mode}: Invalid postprocess')
         
         return det_msg
     
