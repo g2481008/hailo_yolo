@@ -1,3 +1,9 @@
+#===============================================================================================
+# Realsense Image inference via Hailo8 NPU
+# Author: Masanori Imoto, Shota Nagai
+# Created: 2025/08/28
+# GitHub: https://github.com/g2481008/hailo_yolo
+#===============================================================================================
 import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, QoSReliabilityPolicy, QoSHistoryPolicy
@@ -29,9 +35,10 @@ CLASS_LABELS = [ 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus', 't
                  'scissors', 'teddy bear', 'hair drier', 'toothbrush' ] 
 
 PUB_TIME = 1/30 # Publish frequency [s]
+DET_NOTIFY_TIME = 3 # Detection Notification frequency [s]
 
 # -----------------------------------------------------------------------------------------------
-# Yolo Inference Node
+# Yolo Inference Node for realsense D435i/D455
 # -----------------------------------------------------------------------------------------------
 class YoloInferenceNode(Node):
     def __init__(self):
@@ -44,6 +51,7 @@ class YoloInferenceNode(Node):
         self.det_msg = YoloDetectionArray()
         self.image_msg = Image()
         self.timer = self.create_timer(PUB_TIME, self.publish_timer_cb, callback_group=self.cb_group)
+        self.last_notify_time = self.get_clock().now()
         
         # Realsense pipeline setting-------------------------------------------------------------
         self.rs_height, self.rs_width = 480, 640        
@@ -92,27 +100,35 @@ class YoloInferenceNode(Node):
                 return
             color_image = np.asanyarray(color_frame.get_data())
             results = self.model(color_image)
+            ndet = len(results.results)
             detection_msg = self.postprocess_yolo_results(results,color_image,'segment')
             # Detection Header config
             detection_msg.header.stamp = self.shot_time
             detection_msg.header.frame_id = "camera_link"
             # Image config
-            image_msg = self.bridge.cv2_to_imgmsg(color_image, encoding='bgr8')
-            image_msg.header.stamp = self.shot_time
-            image_msg.header.frame_id = "camera_link"
+            # image_msg = self.bridge.cv2_to_imgmsg(color_image, encoding='bgr8')
+            # image_msg.header.stamp = self.shot_time
+            # image_msg.header.frame_id = "camera_link"
+            # Notify detection count periodically
+            current_time = self.get_clock().now()
+            if (current_time - self.last_notify_time).nanoseconds / 1e9 > DET_NOTIFY_TIME:
+                self.get_logger().info(f"Detection: {ndet}")
+                self.last_notify_time = current_time
 
             with self.lock:
                 self.latest_det = detection_msg
-                self.latest_img = image_msg
+                self.latest_ndet = ndet
+                # self.latest_img = image_msg
 
     # Pulish timer
     def publish_timer_cb(self):
         with self.lock:
             det = self.latest_det
-            img = self.latest_img
-        if det is not None and img is not None:
+            # img = self.latest_img
+        # if det is not None and img is not None:
+        if det is not None:
             self.detection_pub.publish(det)
-            self.rs_pub.publish(img)
+            # self.rs_pub.publish(img)
 
     
     def postprocess_yolo_results(self, raw_results, image, mode):
