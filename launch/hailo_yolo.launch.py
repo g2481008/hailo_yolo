@@ -11,12 +11,12 @@ def generate_launch_description():
             name='yolo',  # ノード名
             output='screen'
         ),
-        Node(
-            package='hailo_yolo',
-            executable='yolo_overlay_node',
-            name='yolo_overlay',
-            output='screen'
-        )
+        # Node(
+        #     package='hailo_yolo',
+        #     executable='yolo_overlay_node',
+        #     name='yolo_overlay',
+        #     output='screen'
+        # )
     ])
 
 
